@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="description" content="Downloads oficiais das aplicações Athenova: Food, Stock e ISTQB.">
+  <title>APK Index — Athenova Tools</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #162033;
+      --muted: #667085;
+      --line: #e5eaf1;
+      --surface: #fff;
+      --canvas: #f5f7fb;
+      --blue: #3157d5;
+      --blue-soft: #edf2ff;
+      --green: #087f5b;
+      --green-soft: #e8f8f1;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      --shadow: 0 12px 34px rgb(21 36 69 / 7%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    a { color: inherit; }
+    .shell { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    header { padding: 22px 0; border-bottom: 1px solid var(--line); background: rgb(255 255 255 / 88%); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 780; letter-spacing: -.025em; }
+    .brand-mark { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 13px; background: var(--ink); color: #fff; font-size: 18px; }
+    .brand small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
+    .refresh { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: #fff; color: #344054; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .refresh:hover { border-color: #b9c7ff; color: var(--blue); }
+    main { padding: 54px 0 76px; }
+    .intro { max-width: 720px; margin-bottom: 32px; }
+    .eyebrow { margin: 0 0 10px; color: var(--blue); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(34px, 5vw, 50px); line-height: 1.08; letter-spacing: -.055em; }
+    .intro-copy { margin: 16px 0 0; color: var(--muted); font-size: 16px; }
+    .jumpnav { display: flex; flex-wrap: wrap; gap: 9px; margin: 25px 0 42px; }
+    .jumpnav a { border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; background: var(--surface); color: #344054; font-size: 13px; font-weight: 680; text-decoration: none; }
+    .jumpnav a:hover { border-color: #b9c7ff; color: var(--blue); }
+    .status { min-height: 24px; margin: -24px 0 30px; color: var(--muted); font-size: 12px; }
+    .status.error { color: var(--red); }
+    .product { margin-top: 36px; scroll-margin-top: 20px; }
+    .product-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .product-title { display: flex; align-items: center; gap: 12px; }
+    .app-icon { display: grid; width: 46px; height: 46px; place-items: center; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); font-size: 21px; box-shadow: 0 3px 10px rgb(21 36 69 / 4%); }
+    h2 { margin: 0; font-size: 23px; letter-spacing: -.035em; }
+    .product-subtitle { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    .build-count { color: var(--muted); font-size: 12px; font-weight: 650; white-space: nowrap; }
+    .build-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .build-card { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
+    .build-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 18px 14px; border-bottom: 1px solid var(--line); }
+    .build-type { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 800; }
+    .build-icon { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 9px; background: var(--blue-soft); color: var(--blue); font-size: 14px; }
+    .build-type.debug .build-icon { background: #f1edff; color: #6741c8; }
+    .channel { color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .versions { padding: 5px 18px 13px; }
+    .version { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 0; }
+    .version + .version { border-top: 1px solid #eef1f5; }
+    .version-label { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .055em; text-transform: uppercase; }
+    .new-badge { display: inline-flex; border-radius: 999px; padding: 2px 7px; background: var(--green-soft); color: var(--green); font-size: 9px; font-weight: 850; letter-spacing: .06em; }
+    .version-number { font-size: 17px; font-weight: 800; letter-spacing: -.025em; }
+    .version-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .filename { max-width: 100%; overflow: hidden; color: #8a94a6; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .download { display: inline-flex; min-width: 91px; justify-content: center; align-items: center; gap: 6px; border: 1px solid #d9e1f5; border-radius: 10px; padding: 8px 10px; background: #f9faff; color: #314ca3; font-size: 11px; font-weight: 760; text-decoration: none; white-space: nowrap; }
+    .download:hover { border-color: #9dafef; background: var(--blue-soft); }
+    .download.previous { border-color: var(--line); background: #fff; color: #667085; }
+    .empty-state { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; border: 1px dashed #cbd3df; border-radius: 15px; padding: 17px; background: rgb(255 255 255 / 55%); color: var(--muted); }
+    .empty-icon { font-size: 19px; }
+    .empty-state strong { display: block; color: #475467; font-size: 13px; }
+    .empty-state span { font-size: 12px; }
+    footer { padding: 22px 0 30px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .foot-row { display: flex; justify-content: space-between; gap: 15px; }
+    .foot-row a { text-decoration: none; }
+    .foot-row a:hover { color: var(--blue); }
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 28px, 520px); }
+      header { padding: 16px 0; }
+      main { padding: 38px 0 54px; }
+      .build-grid { grid-template-columns: 1fr; }
+      .product-head { align-items: center; }
+      .download { min-width: 82px; padding: 8px; }
+      .foot-row { flex-direction: column; }
+    }
+    @media (max-width: 390px) {
+      .shell { width: calc(100% - 22px); }
+      .build-head, .versions { padding-left: 13px; padding-right: 13px; }
+      .version { gap: 8px; }
+      .version-number { font-size: 15px; }
+      .download { min-width: 73px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">↓</span><span>APK Index<small>Athenova Tools</small></span></div>
+      <button class="refresh" id="refresh" type="button">↻ Atualizar</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">Centro de downloads</p>
+      <h1 id="page-title">As aplicações.<br>As versões certas.</h1>
+      <p class="intro-copy">Escolhe a aplicação e o canal. Cada canal mantém a versão atual e a anterior; quando é publicada uma nova versão, a atual passa automaticamente para anterior.</p>
+      <nav class="jumpnav" aria-label="Ir para aplicação">
+        <a href="#food">🍽️ Food</a><a href="#stock">📦 Stock</a><a href="#istqb">📘 ISTQB</a>
+      </nav>
+    </section>
+
+    <p class="status" id="status" role="status" aria-live="polite">A carregar versões publicadas…</p>
+    <div id="catalog">
+      <section class="product" id="food" aria-labelledby="food-title">
+        <div class="product-head"><div class="product-title"><span class="app-icon" aria-hidden="true">🍽️</span><div><h2 id="food-title">Food</h2><p class="product-subtitle">Planeamento alimentar e refeições</p></div></div><span class="build-count">Release · Debug</span></div>
+        <div class="build-grid" data-app="food"></div>
+      </section>
+      <section class="product" id="stock" aria-labelledby="stock-title">
+        <div class="product-head"><div class="product-title"><span class="app-icon" aria-hidden="true">📦</span><div><h2 id="stock-title">Stock</h2><p class="product-subtitle">Inventário e gestão de stock</p></div></div><span class="build-count">Release · Debug</span></div>
+        <div class="build-grid" data-app="stock"></div>
+      </section>
+      <section class="product" id="istqb" aria-labelledby="istqb-title">
+        <div class="product-head"><div class="product-title"><span class="app-icon" aria-hidden="true">📘</span><div><h2 id="istqb-title">ISTQB</h2><p class="product-subtitle">CTFL · preparação para exame</p></div></div><span class="build-count">Release · Debug</span></div>
+        <div class="build-grid" data-app="istqb"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer><div class="shell foot-row"><span>APK Index · Athenova Tools</span><a href="https://github.com/Athenova-tools/APK/releases">Histórico de publicações ↗</a></div></footer>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const RELEASES_URL = "https://api.github.com/repos/Athenova-tools/APK/releases?per_page=100";
+      const apps = [
+        { id: "food", title: "Food" },
+        { id: "stock", title: "Stock" },
+        { id: "istqb", title: "ISTQB" },
+      ];
+      const channels = [
+        { id: "release", label: "Release", icon: "↓", hint: "Estável" },
+        { id: "debug", label: "Debug", icon: "⚙", hint: "Testes" },
+      ];
+      const statusEl = document.getElementById("status");
+      const catalogEl = document.getElementById("catalog");
+
+      const element = (tag, className, text) => {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+
+      function formatDate(value) {
+        if (!value) return "Data indisponível";
+        return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(value));
+      }
+
+      function formatSize(bytes) {
+        if (!Number.isFinite(bytes)) return "Tamanho indisponível";
+        return `${(bytes / (1024 * 1024)).toLocaleString("pt-PT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
+      }
+
+      function releaseVersion(release, appId) {
+        const prefix = `${appId}-v`;
+        const suffix = /-\d{8}T\d{6}Z$/;
+        return release.tag_name.slice(prefix.length).replace(suffix, "");
+      }
+
+      function relevantRelease(release) {
+        if (release.draft || release.prerelease) return false;
+        return apps.some(({ id }) => new RegExp(`^${id}-v.+-\\d{8}T\\d{6}Z$`).test(release.tag_name));
+      }
+
+      function buildVersionRow(release, appId, channel, label, isCurrent) {
+        const assetName = `${appId}-${channel.id}.apk`;
+        const asset = release.assets.find((item) => item.name === assetName);
+        const row = element("div", "version");
+        const details = element("div");
+        const versionLabel = element("div", "version-label", label);
+        if (isCurrent) versionLabel.appendChild(element("span", "new-badge", "NOVO"));
+        details.appendChild(versionLabel);
+        details.appendChild(element("div", "version-number", `v${releaseVersion(release, appId)}`));
+
+        if (!asset) {
+          details.appendChild(element("div", "version-meta", `O APK ${channel.label} não está anexado a esta publicação.`));
+          row.append(details, element("span", "channel", "Indisponível"));
+          return row;
+        }
+
+        const meta = element("div", "version-meta");
+        meta.appendChild(element("span", "", formatDate(asset.created_at || release.published_at)));
+        meta.appendChild(element("span", "", formatSize(asset.size)));
+        details.appendChild(meta);
+        details.appendChild(element("div", "filename", asset.name));
+
+        const link = element("a", `download${isCurrent ? "" : " previous"}`, isCurrent ? "↓ Transferir" : "↓ Anterior");
+        link.href = asset.browser_download_url;
+        link.setAttribute("download", asset.name);
+        link.setAttribute("aria-label", `Transferir ${asset.name}`);
+        row.append(details, link);
+        return row;
+      }
+
+      function buildEmptyRow(channel) {
+        const row = element("div", "version");
+        const details = element("div");
+        details.appendChild(element("div", "version-label", "Anterior"));
+        details.appendChild(element("div", "version-meta", "Ainda não existe uma versão anterior publicada."));
+        row.append(details, element("span", "channel", "A aguardar"));
+        return row;
+      }
+
+      function renderChannel(app, channel, releases) {
+        const card = element("article", "build-card");
+        const head = element("div", "build-head");
+        const type = element("div", `build-type${channel.id === "debug" ? " debug" : ""}`);
+        type.appendChild(element("span", "build-icon", channel.icon));
+        type.appendChild(document.createTextNode(channel.label));
+        head.append(type, element("span", "channel", channel.hint));
+        const versions = element("div", "versions");
+
+        if (releases.length === 0) {
+          const empty = element("div", "empty-state");
+          empty.appendChild(element("span", "empty-icon", "📦"));
+          const copy = element("div");
+          copy.appendChild(element("strong", "", "A primeira publicação fica aqui"));
+          copy.appendChild(element("span", "", "Este canal ainda não tem APKs publicados."));
+          empty.appendChild(copy);
+          card.append(head, empty);
+          return card;
+        }
+
+        versions.appendChild(buildVersionRow(releases[0], app.id, channel, "Atual", true));
+        if (releases[1]) versions.appendChild(buildVersionRow(releases[1], app.id, channel, "Anterior", false));
+        else versions.appendChild(buildEmptyRow(channel));
+        card.append(head, versions);
+        return card;
+      }
+
+      function renderReleases(releases) {
+        const sorted = releases.filter(relevantRelease).sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+        for (const app of apps) {
+          const appReleases = sorted.filter((release) => release.tag_name.startsWith(`${app.id}-v`));
+          const grid = catalogEl.querySelector(`[data-app="${app.id}"]`);
+          grid.replaceChildren(...channels.map((channel) => renderChannel(app, channel, appReleases)));
+        }
+      }
+
+      async function loadReleases() {
+        statusEl.className = "status";
+        statusEl.textContent = "A carregar versões publicadas…";
+        try {
+          const response = await fetch(RELEASES_URL, { headers: { Accept: "application/vnd.github+json" } });
+          if (!response.ok) throw new Error(`GitHub respondeu com HTTP ${response.status}.`);
+          const releases = await response.json();
+          renderReleases(releases);
+          statusEl.textContent = `Atualizado em ${new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}.`;
+        } catch (error) {
+          statusEl.className = "status error";
+          statusEl.textContent = `Não foi possível carregar os APKs. ${error.message} Atualiza a página para tentar novamente.`;
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", loadReleases);
+      loadReleases();
+    })();
+  </script>
+</body>
+</html>
