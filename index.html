@@ -175,26 +175,36 @@
         return `${(bytes / (1024 * 1024)).toLocaleString("pt-PT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
       }
 
-      function releaseVersion(release, appId) {
-        const prefix = `${appId}-v`;
-        const suffix = /-\d{8}T\d{6}Z$/;
-        return release.tag_name.slice(prefix.length).replace(suffix, "");
-      }
+      function releaseDetails(release, app, channel) {
+        if (release.draft || release.prerelease) return null;
+        const assetName = `${app.id}-${channel.id}.apk`;
+        const channelPrefix = `${app.id}-${channel.id}-v`;
+        const legacyPrefix = `${app.id}-v`;
+        let version;
 
-      function relevantRelease(release) {
-        if (release.draft || release.prerelease) return false;
-        return apps.some(({ id }) => new RegExp(`^${id}-v.+-\\d{8}T\\d{6}Z$`).test(release.tag_name));
+        if (release.tag_name.startsWith(channelPrefix)) {
+          version = release.tag_name.slice(channelPrefix.length);
+          version = version.replace(/-\d{8}T\d{6}Z-\d+$/, "");
+        } else if (release.tag_name.startsWith(legacyPrefix)
+          && release.assets.some((asset) => asset.name === assetName)) {
+          version = release.tag_name.slice(legacyPrefix.length);
+          version = version.replace(/-\d{8}T\d{6}Z$/, "");
+        } else {
+          return null;
+        }
+
+        return { version, assetName };
       }
 
       function buildVersionRow(release, appId, channel, label, isCurrent) {
-        const assetName = `${appId}-${channel.id}.apk`;
-        const asset = release.assets.find((item) => item.name === assetName);
+        const releaseInfo = releaseDetails(release, { id: appId }, channel);
+        const asset = release.assets.find((item) => item.name === releaseInfo.assetName);
         const row = element("div", "version");
         const details = element("div");
         const versionLabel = element("div", "version-label", label);
         if (isCurrent) versionLabel.appendChild(element("span", "new-badge", "NOVO"));
         details.appendChild(versionLabel);
-        details.appendChild(element("div", "version-number", `v${releaseVersion(release, appId)}`));
+        details.appendChild(element("div", "version-number", `v${releaseInfo.version}`));
 
         if (!asset) {
           details.appendChild(element("div", "version-meta", `O APK ${channel.label} não está anexado a esta publicação.`));
@@ -253,11 +263,15 @@
       }
 
       function renderReleases(releases) {
-        const sorted = releases.filter(relevantRelease).sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+        const sorted = releases
+          .filter((release) => !release.draft && !release.prerelease)
+          .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
         for (const app of apps) {
-          const appReleases = sorted.filter((release) => release.tag_name.startsWith(`${app.id}-v`));
           const grid = catalogEl.querySelector(`[data-app="${app.id}"]`);
-          grid.replaceChildren(...channels.map((channel) => renderChannel(app, channel, appReleases)));
+          grid.replaceChildren(...channels.map((channel) => {
+            const channelReleases = sorted.filter((release) => releaseDetails(release, app, channel));
+            return renderChannel(app, channel, channelReleases);
+          }));
         }
       }
 

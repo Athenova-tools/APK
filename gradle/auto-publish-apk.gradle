@@ -1,0 +1,47 @@
+def appName = project.extensions.extraProperties.get("apkIndexApp")?.toString()
+if (!(appName in ["food", "stock", "istqb"])) {
+    throw new GradleException("Set apkIndexApp to food, stock or istqb before applying APK Index publishing")
+}
+
+def androidExtension = project.extensions.findByName("android")
+def appVersion = androidExtension?.defaultConfig?.versionName?.toString()
+if (!appVersion) {
+    throw new GradleException("Android defaultConfig.versionName is required for APK Index publishing")
+}
+
+def apkIndexRoot = System.getenv("APK_INDEX_REPO") ?: new File(System.getProperty("user.home"), "proj/APK").absolutePath
+def publisher = new File(apkIndexRoot, "scripts/publish-apks.sh")
+if (!publisher.isFile()) {
+    throw new GradleException("APK Index publisher not found at ${publisher.absolutePath}; set APK_INDEX_REPO")
+}
+
+["debug", "release"].each { channel ->
+    def capitalized = channel.capitalize()
+    def outputDirectory = project.layout.buildDirectory.dir("outputs/apk/${channel}")
+    def publishTask = project.tasks.register("autoPublish${capitalized}Apk") {
+        inputs.dir(outputDirectory)
+        doLast {
+            def apkDirectory = outputDirectory.get().asFile
+            def apks = apkDirectory.listFiles()?.findAll { it.isFile() && it.name.endsWith(".apk") } ?: []
+            if (apks.size() != 1) {
+                throw new GradleException("Expected exactly one ${channel} APK in ${apkDirectory}, found ${apks.size()}")
+            }
+
+            project.logger.lifecycle("Generated APK: ${apks[0].absolutePath}")
+            project.logger.lifecycle("Publishing ${appName} ${channel} v${appVersion} to APK Index")
+            def process = new ProcessBuilder(
+                "bash", publisher.absolutePath, appName, channel, appVersion, apks[0].absolutePath
+            ).redirectErrorStream(true).start()
+            process.inputStream.withReader { reader ->
+                reader.eachLine { line -> project.logger.lifecycle(line) }
+            }
+            if (process.waitFor() != 0) {
+                throw new GradleException("Could not publish ${appName} ${channel} APK to APK Index")
+            }
+        }
+    }
+
+    project.tasks.matching { it.name == "package${capitalized}" }.configureEach {
+        finalizedBy(publishTask)
+    }
+}
