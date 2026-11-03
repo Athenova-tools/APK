@@ -163,7 +163,11 @@
 
       function formatDate(value) {
         if (!value) return "Data indisponível";
-        return new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(value));
+        return new Intl.DateTimeFormat("pt-PT", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+          timeZone: "Europe/Lisbon",
+        }).format(new Date(value));
       }
 
       function formatSize(bytes) {
