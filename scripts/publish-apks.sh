@@ -35,10 +35,14 @@ done
 tag="${app}-v${version}-$(date -u +%Y%m%dT%H%M%SZ)"
 debug_asset="${app}-debug.apk"
 release_asset="${app}-release.apk"
+upload_dir=$(mktemp -d)
+trap 'rm -rf "$upload_dir"' EXIT
+cp -- "$debug_apk" "$upload_dir/$debug_asset"
+cp -- "$release_apk" "$upload_dir/$release_asset"
 
 gh release create "$tag" \
-  "$debug_apk#$debug_asset" \
-  "$release_apk#$release_asset" \
+  "$upload_dir/$debug_asset" \
+  "$upload_dir/$release_asset" \
   --repo Athenova-tools/APK \
   --title "$title v$version" \
   --notes "Publicação de $title v$version. Contém os APKs Debug e Release." \
