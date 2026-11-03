@@ -75,10 +75,15 @@ fi
 "$apksigner" verify "$staged_apk" >/dev/null
 
 local_digest="sha256:$(sha256sum "$staged_apk" | cut -d ' ' -f 1)"
-matching_digest=$(gh api --paginate "repos/Athenova-tools/APK/releases?per_page=100" \
-  --jq ".[] | select((.tag_name | startswith(\"${app}-${channel}-v\")) or (.tag_name | startswith(\"${app}-v\"))) | .assets[]? | select(.name == \"$asset_name\") | .digest" \
-  | python3 -c 'import sys; print("true" if any(line.strip() == sys.argv[1] for line in sys.stdin) else "false")' "$local_digest")
-if [[ "$matching_digest" == "true" ]]; then
+matching_digest=$(gh api --paginate --slurp "repos/Athenova-tools/APK/releases?per_page=100" \
+  | python3 -c 'import json,sys; app,channel,asset_name=sys.argv[1:]; pages=json.load(sys.stdin); releases=[release for page in pages for release in page]; matches=[]
+for release in releases:
+ tag=release.get("tag_name", "")
+ if release.get("draft") or release.get("prerelease"): continue
+ if tag.startswith(f"{app}-{channel}-v") or tag.startswith(f"{app}-v"):
+  matches.extend((release.get("published_at", ""), asset.get("digest", "")) for asset in release.get("assets", []) if asset.get("name")==asset_name)
+print(max(matches, default=("", ""))[1])' "$app" "$channel" "$asset_name")
+if [[ "$local_digest" == "$matching_digest" ]]; then
   printf 'APK generated at: %s\n' "$apk"
   printf 'Publication successful: identical APK already available (%s %s v%s).\n' "$title" "$channel" "$version"
   printf 'APK Index: https://athenova-tools.github.io/APK/\n'
