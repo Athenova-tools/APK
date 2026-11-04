@@ -155,7 +155,6 @@
       ];
       const statusEl = document.getElementById("status");
       const catalogEl = document.getElementById("catalog");
-      let loadedReleases = null;
 
       const element = (tag, className, text) => {
         const node = document.createElement(tag);
@@ -194,22 +193,6 @@
         }
       }
 
-      function dismissLoadedBadges() {
-        if (!loadedReleases) return;
-        for (const app of apps) {
-          for (const channel of channels) {
-            const latest = loadedReleases
-              .filter((release) => releaseDetails(release, app, channel))
-              .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))[0];
-            if (!latest) continue;
-            rememberDownload(`apk-index:downloaded:${app.id}:${channel.id}`, latest.tag_name);
-            const cardIndex = channel.id === "release" ? 1 : 2;
-            catalogEl.querySelector(`[data-app="${app.id}"] .build-card:nth-child(${cardIndex}) .new-badge`)?.remove();
-          }
-        }
-        updateAppStars();
-      }
-
       function updateAppStars() {
         for (const app of apps) {
           const hasNewApk = Boolean(catalogEl.querySelector(`[data-app="${app.id}"] .new-badge`));
@@ -242,7 +225,7 @@
       function buildVersionRow(release, appId, channel, label, isCurrent) {
         const releaseInfo = releaseDetails(release, { id: appId }, channel);
         const asset = release.assets.find((item) => item.name === releaseInfo.assetName);
-        const viewedKey = `apk-index:downloaded:${appId}:${channel.id}`;
+        const viewedKey = `apk-index:downloaded:v2:${appId}:${channel.id}`;
         const isNew = isCurrent && !wasDownloaded(viewedKey, release.tag_name);
         const row = element("div", "version");
         const details = element("div");
@@ -338,12 +321,10 @@
       async function loadReleases() {
         statusEl.className = "status";
         statusEl.textContent = "A carregar versões publicadas…";
-        dismissLoadedBadges();
         try {
           const response = await fetch(RELEASES_URL, { headers: { Accept: "application/vnd.github+json" } });
           if (!response.ok) throw new Error(`GitHub respondeu com HTTP ${response.status}.`);
           const releases = await response.json();
-          loadedReleases = releases;
           renderReleases(releases);
           statusEl.textContent = `Atualizado em ${new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}.`;
         } catch (error) {
@@ -353,7 +334,6 @@
       }
 
       document.getElementById("refresh").addEventListener("click", loadReleases);
-      window.addEventListener("pagehide", dismissLoadedBadges);
       loadReleases();
     })();
   </script>
