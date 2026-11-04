@@ -45,8 +45,10 @@
     h1 { margin: 0; font-size: clamp(34px, 5vw, 50px); line-height: 1.08; letter-spacing: -.055em; }
     .intro-copy { margin: 16px 0 0; color: var(--muted); font-size: 16px; }
     .jumpnav { display: flex; flex-wrap: wrap; gap: 9px; margin: 25px 0 42px; }
-    .jumpnav a { border: 1px solid var(--line); border-radius: 999px; padding: 8px 13px; background: var(--surface); color: #344054; font-size: 13px; font-weight: 680; text-decoration: none; }
+    .jumpnav a { position: relative; border: 1px solid var(--line); border-radius: 999px; padding: 8px 25px 8px 13px; background: var(--surface); color: #344054; font-size: 13px; font-weight: 680; text-decoration: none; }
     .jumpnav a:hover { border-color: #b9c7ff; color: var(--blue); }
+    .jumpnav-star { position: absolute; top: -7px; right: -6px; display: grid; width: 19px; height: 19px; place-items: center; border: 2px solid var(--canvas); border-radius: 50%; background: #f5b82e; color: #fff; font-size: 11px; line-height: 1; }
+    .jumpnav-star[hidden] { display: none; }
     .status { min-height: 24px; margin: -24px 0 30px; color: var(--muted); font-size: 12px; }
     .status.error { color: var(--red); }
     .product { margin-top: 36px; scroll-margin-top: 20px; }
@@ -114,7 +116,7 @@
       <h1 id="page-title">As aplicações.<br>As versões certas.</h1>
       <p class="intro-copy">Escolhe a aplicação e o canal. Cada canal mantém a versão atual e a anterior; quando é publicada uma nova versão, a atual passa automaticamente para anterior.</p>
       <nav class="jumpnav" aria-label="Ir para aplicação">
-        <a href="#food">🍽️ Food</a><a href="#stock">📦 Stock</a><a href="#istqb">📘 ISTQB</a>
+        <a href="#food" data-app-chip="food">🍽️ Food<span class="jumpnav-star" aria-label="APK novo" hidden>★</span></a><a href="#stock" data-app-chip="stock">📦 Stock<span class="jumpnav-star" aria-label="APK novo" hidden>★</span></a><a href="#istqb" data-app-chip="istqb">📘 ISTQB<span class="jumpnav-star" aria-label="APK novo" hidden>★</span></a>
       </nav>
     </section>
 
@@ -205,6 +207,15 @@
             catalogEl.querySelector(`[data-app="${app.id}"] .build-card:nth-child(${cardIndex}) .new-badge`)?.remove();
           }
         }
+        updateAppStars();
+      }
+
+      function updateAppStars() {
+        for (const app of apps) {
+          const hasNewApk = Boolean(catalogEl.querySelector(`[data-app="${app.id}"] .new-badge`));
+          const star = document.querySelector(`[data-app-chip="${app.id}"] .jumpnav-star`);
+          if (star) star.hidden = !hasNewApk;
+        }
       }
 
       function releaseDetails(release, app, channel) {
@@ -260,6 +271,7 @@
           const markAsDownloaded = () => {
             rememberDownload(viewedKey, release.tag_name);
             versionLabel.querySelector(".new-badge")?.remove();
+            updateAppStars();
           };
           link.addEventListener("pointerdown", (event) => {
             if (event.button === 0) markAsDownloaded();
@@ -320,6 +332,7 @@
             return renderChannel(app, channel, channelReleases);
           }));
         }
+        updateAppStars();
       }
 
       async function loadReleases() {
