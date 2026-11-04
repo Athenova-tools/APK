@@ -153,6 +153,7 @@
       ];
       const statusEl = document.getElementById("status");
       const catalogEl = document.getElementById("catalog");
+      let loadedReleases = null;
 
       const element = (tag, className, text) => {
         const node = document.createElement(tag);
@@ -173,6 +174,37 @@
       function formatSize(bytes) {
         if (!Number.isFinite(bytes)) return "Tamanho indisponível";
         return `${(bytes / (1024 * 1024)).toLocaleString("pt-PT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
+      }
+
+      function wasDownloaded(key, version) {
+        try {
+          return localStorage.getItem(key) === version;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function rememberDownload(key, version) {
+        try {
+          localStorage.setItem(key, version);
+        } catch (error) {
+          // Badge dismissal still works for this page view when storage is unavailable.
+        }
+      }
+
+      function dismissLoadedBadges() {
+        if (!loadedReleases) return;
+        for (const app of apps) {
+          for (const channel of channels) {
+            const latest = loadedReleases
+              .filter((release) => releaseDetails(release, app, channel))
+              .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))[0];
+            if (!latest) continue;
+            rememberDownload(`apk-index:downloaded:${app.id}:${channel.id}`, latest.tag_name);
+            const cardIndex = channel.id === "release" ? 1 : 2;
+            catalogEl.querySelector(`[data-app="${app.id}"] .build-card:nth-child(${cardIndex}) .new-badge`)?.remove();
+          }
+        }
       }
 
       function releaseDetails(release, app, channel) {
@@ -199,10 +231,12 @@
       function buildVersionRow(release, appId, channel, label, isCurrent) {
         const releaseInfo = releaseDetails(release, { id: appId }, channel);
         const asset = release.assets.find((item) => item.name === releaseInfo.assetName);
+        const viewedKey = `apk-index:downloaded:${appId}:${channel.id}`;
+        const isNew = isCurrent && !wasDownloaded(viewedKey, release.tag_name);
         const row = element("div", "version");
         const details = element("div");
         const versionLabel = element("div", "version-label", label);
-        if (isCurrent) versionLabel.appendChild(element("span", "new-badge", "NOVO"));
+        if (isNew) versionLabel.appendChild(element("span", "new-badge", "NOVO"));
         details.appendChild(versionLabel);
         details.appendChild(element("div", "version-number", `v${releaseInfo.version}`));
 
@@ -222,6 +256,19 @@
         link.href = asset.browser_download_url;
         link.setAttribute("download", asset.name);
         link.setAttribute("aria-label", `Transferir ${asset.name}`);
+        if (isCurrent) {
+          const markAsDownloaded = () => {
+            rememberDownload(viewedKey, release.tag_name);
+            versionLabel.querySelector(".new-badge")?.remove();
+          };
+          link.addEventListener("pointerdown", (event) => {
+            if (event.button === 0) markAsDownloaded();
+          });
+          link.addEventListener("click", markAsDownloaded);
+          link.addEventListener("auxclick", (event) => {
+            if (event.button === 1) markAsDownloaded();
+          });
+        }
         row.append(details, link);
         return row;
       }
@@ -278,10 +325,12 @@
       async function loadReleases() {
         statusEl.className = "status";
         statusEl.textContent = "A carregar versões publicadas…";
+        dismissLoadedBadges();
         try {
           const response = await fetch(RELEASES_URL, { headers: { Accept: "application/vnd.github+json" } });
           if (!response.ok) throw new Error(`GitHub respondeu com HTTP ${response.status}.`);
           const releases = await response.json();
+          loadedReleases = releases;
           renderReleases(releases);
           statusEl.textContent = `Atualizado em ${new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}.`;
         } catch (error) {
@@ -291,6 +340,7 @@
       }
 
       document.getElementById("refresh").addEventListener("click", loadReleases);
+      window.addEventListener("pagehide", dismissLoadedBadges);
       loadReleases();
     })();
   </script>
