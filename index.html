@@ -155,6 +155,7 @@
       ];
       const statusEl = document.getElementById("status");
       const catalogEl = document.getElementById("catalog");
+      const currentTags = Object.fromEntries(apps.map((app) => [app.id, {}]));
 
       const element = (tag, className, text) => {
         const node = document.createElement(tag);
@@ -177,17 +178,18 @@
         return `${(bytes / (1024 * 1024)).toLocaleString("pt-PT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
       }
 
-      function wasDownloaded(key, version) {
+      function wasDownloaded(appId, version) {
         try {
-          return localStorage.getItem(key) === version;
+          const downloadedTags = JSON.parse(localStorage.getItem(`apk-index:downloaded:v3:${appId}`) || "{}");
+          return Object.values(downloadedTags).includes(version);
         } catch (error) {
           return false;
         }
       }
 
-      function rememberDownload(key, version) {
+      function rememberDownload(appId) {
         try {
-          localStorage.setItem(key, version);
+          localStorage.setItem(`apk-index:downloaded:v3:${appId}`, JSON.stringify(currentTags[appId]));
         } catch (error) {
           // Badge dismissal still works for this page view when storage is unavailable.
         }
@@ -225,8 +227,8 @@
       function buildVersionRow(release, appId, channel, label, isCurrent) {
         const releaseInfo = releaseDetails(release, { id: appId }, channel);
         const asset = release.assets.find((item) => item.name === releaseInfo.assetName);
-        const viewedKey = `apk-index:downloaded:v2:${appId}:${channel.id}`;
-        const isNew = isCurrent && !wasDownloaded(viewedKey, release.tag_name);
+        // Release and Debug share one "new" state per app and version.
+        const isNew = isCurrent && !wasDownloaded(appId, release.tag_name);
         const row = element("div", "version");
         const details = element("div");
         const versionLabel = element("div", "version-label", label);
@@ -252,8 +254,8 @@
         link.setAttribute("aria-label", `Transferir ${asset.name}`);
         if (isCurrent) {
           const markAsDownloaded = () => {
-            rememberDownload(viewedKey, release.tag_name);
-            versionLabel.querySelector(".new-badge")?.remove();
+            rememberDownload(appId);
+            catalogEl.querySelectorAll(`[data-app="${appId}"] .new-badge`).forEach((badge) => badge.remove());
             updateAppStars();
           };
           link.addEventListener("pointerdown", (event) => {
@@ -310,8 +312,24 @@
           .sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
         for (const app of apps) {
           const grid = catalogEl.querySelector(`[data-app="${app.id}"]`);
-          grid.replaceChildren(...channels.map((channel) => {
+          const channelReleasesById = Object.fromEntries(channels.map((channel) => {
             const channelReleases = sorted.filter((release) => releaseDetails(release, app, channel));
+            currentTags[app.id][channel.id] = channelReleases[0]?.tag_name;
+            return [channel.id, channelReleases];
+          }));
+          // Preserve download acknowledgements saved by the previous per-channel version.
+          try {
+            const legacyAcknowledged = channels.some((channel) =>
+              localStorage.getItem(`apk-index:downloaded:v2:${app.id}:${channel.id}`)
+                === currentTags[app.id][channel.id]);
+            if (legacyAcknowledged && !localStorage.getItem(`apk-index:downloaded:v3:${app.id}`)) {
+              rememberDownload(app.id);
+            }
+          } catch (error) {
+            // Continue without migrating when browser storage is unavailable.
+          }
+          grid.replaceChildren(...channels.map((channel) => {
+            const channelReleases = channelReleasesById[channel.id];
             return renderChannel(app, channel, channelReleases);
           }));
         }
