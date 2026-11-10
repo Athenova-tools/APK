@@ -20,13 +20,13 @@ The publisher creates a uniquely tagged GitHub Release and uploads one APK as
 `<app>-<channel>.apk`. For a manual publication:
 
 ```sh
-./scripts/publish-apks.sh <food|stock|istqb> <debug|release> <app-version> <apk>
+./scripts/publish-apks.sh <food|stock|istqb> <debug|release> <app-version> <apk> [version-code]
 ```
 
 For example:
 
 ```sh
-./scripts/publish-apks.sh food debug 1.0 /path/to/app-debug.apk
+./scripts/publish-apks.sh food debug 1.0 /path/to/app-debug.apk 1
 ```
 
 The page sorts each app/channel independently by publication date, so a new

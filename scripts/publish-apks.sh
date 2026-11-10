@@ -2,16 +2,17 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <food|stock|istqb> <debug|release> <app-version> <apk>" >&2
+  echo "Usage: $0 <food|stock|istqb> <debug|release> <app-version> <apk> [version-code]" >&2
   exit 2
 }
 
-[[ $# -eq 4 ]] || usage
+[[ $# -eq 4 || $# -eq 5 ]] || usage
 
 app=$1
 channel=$2
 version=$3
 apk=$4
+version_code=${5:-}
 
 case "$app" in
   food) title="Food" ;;
@@ -29,6 +30,10 @@ esac
   echo "Invalid app version: $version" >&2
   exit 2
 }
+if [[ -n "$version_code" && ! "$version_code" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Invalid version code: $version_code" >&2
+  exit 2
+fi
 
 if [[ ! -f "$apk" || "$apk" != *.apk ]]; then
   echo "APK file not found or invalid: $apk" >&2
@@ -90,11 +95,17 @@ if [[ "$local_digest" == "$matching_digest" ]]; then
   exit 0
 fi
 
+notes="Publicação de $title $channel v$version."
+if [[ -n "$version_code" ]]; then
+  notes+=$'\nVersionCode: '
+  notes+="$version_code"
+fi
+
 gh release create "$tag" \
   "$staged_apk" \
   --repo Athenova-tools/APK \
   --title "$title $channel v$version" \
-  --notes "Publicação de $title $channel v$version." \
+  --notes "$notes" \
   --latest=false
 
 printf 'APK generated at: %s\n' "$apk"

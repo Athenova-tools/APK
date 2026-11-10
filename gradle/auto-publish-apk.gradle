@@ -5,8 +5,12 @@ if (!(appName in ["food", "stock", "istqb"])) {
 
 def androidExtension = project.extensions.findByName("android")
 def appVersion = androidExtension?.defaultConfig?.versionName?.toString()
+def appVersionCode = androidExtension?.defaultConfig?.versionCode?.toString()
 if (!appVersion) {
     throw new GradleException("Android defaultConfig.versionName is required for APK Index publishing")
+}
+if (!appVersionCode || !(appVersionCode ==~ /[0-9]+/)) {
+    throw new GradleException("Android defaultConfig.versionCode is required for APK Index publishing")
 }
 
 def apkIndexRoot = System.getenv("APK_INDEX_REPO") ?: new File(System.getProperty("user.home"), "proj/APK").absolutePath
@@ -30,7 +34,8 @@ if (!publisher.isFile()) {
             project.logger.lifecycle("Generated APK: ${apks[0].absolutePath}")
             project.logger.lifecycle("Publishing ${appName} ${channel} v${appVersion} to APK Index")
             def process = new ProcessBuilder(
-                "bash", publisher.absolutePath, appName, channel, appVersion, apks[0].absolutePath
+                "bash", publisher.absolutePath, appName, channel, appVersion, apks[0].absolutePath,
+                appVersionCode
             ).redirectErrorStream(true).start()
             process.inputStream.withReader { reader ->
                 reader.eachLine { line -> project.logger.lifecycle(line) }
