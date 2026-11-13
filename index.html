@@ -144,6 +144,7 @@
       "use strict";
 
       const RELEASES_URL = "https://api.github.com/repos/Athenova-tools/APK/releases?per_page=100";
+      const RELEASES_PAGE_SIZE = 100;
       const apps = [
         { id: "food", title: "Food" },
         { id: "stock", title: "Stock" },
@@ -340,9 +341,17 @@
         statusEl.className = "status";
         statusEl.textContent = "A carregar versões publicadas…";
         try {
-          const response = await fetch(RELEASES_URL, { headers: { Accept: "application/vnd.github+json" } });
-          if (!response.ok) throw new Error(`GitHub respondeu com HTTP ${response.status}.`);
-          const releases = await response.json();
+          const releases = [];
+          for (let page = 1; ; page++) {
+            const response = await fetch(`${RELEASES_URL}&page=${page}`, {
+              headers: { Accept: "application/vnd.github+json" },
+            });
+            if (!response.ok) throw new Error(`GitHub respondeu com HTTP ${response.status}.`);
+            const batch = await response.json();
+            if (!Array.isArray(batch)) throw new Error("GitHub devolveu uma lista de versões inválida.");
+            releases.push(...batch);
+            if (batch.length < RELEASES_PAGE_SIZE) break;
+          }
           renderReleases(releases);
           statusEl.textContent = `Atualizado em ${new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date())}.`;
         } catch (error) {
