@@ -38,6 +38,10 @@ The displayed version is passed from the app's `versionName`. The unique release
 tag also includes its publication timestamp, so builds can be kept distinct even
 when an app reuses a version name.
 
+Each successful publication refreshes `<app>-releases.json` on GitHub Pages
+from the authenticated Releases API. Apps use this static manifest for update
+detection instead of depending on GitHub's unauthenticated API quota.
+
 ## Local preview
 
 Open `index.html` in a browser. It reads the public Releases API, so releases
