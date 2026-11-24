@@ -80,15 +80,32 @@ fi
 "$apksigner" verify "$staged_apk" >/dev/null
 
 local_digest="sha256:$(sha256sum "$staged_apk" | cut -d ' ' -f 1)"
-matching_digest=$(gh api --paginate --slurp "repos/Athenova-tools/APK/releases?per_page=100" \
-  | python3 -c 'import json,sys; app,channel,asset_name=sys.argv[1:]; pages=json.load(sys.stdin); releases=[release for page in pages for release in page]; matches=[]
+release_pages="$upload_dir/releases-pages.json"
+manifest_repo="$(cd "$(dirname "$0")/.." && pwd)"
+
+refresh_release_manifest() {
+  gh api --paginate --slurp "repos/Athenova-tools/APK/releases?per_page=100" > "$release_pages"
+  python3 "$manifest_repo/scripts/update_release_manifest.py" \
+    "$app" "$release_pages" "$manifest_repo/${app}-releases.json"
+  if ! git -C "$manifest_repo" diff --quiet -- "${app}-releases.json" ||
+    ! git -C "$manifest_repo" ls-files --error-unmatch "${app}-releases.json" >/dev/null 2>&1; then
+    git -C "$manifest_repo" add -- "${app}-releases.json"
+    git -C "$manifest_repo" commit -m "Atualiza manifesto de releases de $title"
+    git -C "$manifest_repo" push origin HEAD
+    printf 'Release manifest updated: https://athenova-tools.github.io/APK/%s-releases.json\n' "$app"
+  fi
+}
+
+gh api --paginate --slurp "repos/Athenova-tools/APK/releases?per_page=100" > "$release_pages"
+matching_digest=$(python3 -c 'import json,sys; app,channel,asset_name,source=sys.argv[1:]; pages=json.load(open(source)); releases=[release for page in pages for release in page]; matches=[]
 for release in releases:
  tag=release.get("tag_name", "")
  if release.get("draft") or release.get("prerelease"): continue
  if tag.startswith(f"{app}-{channel}-v") or tag.startswith(f"{app}-v"):
   matches.extend((release.get("published_at", ""), asset.get("digest", "")) for asset in release.get("assets", []) if asset.get("name")==asset_name)
-print(max(matches, default=("", ""))[1])' "$app" "$channel" "$asset_name")
+print(max(matches, default=("", ""))[1])' "$app" "$channel" "$asset_name" "$release_pages")
 if [[ "$local_digest" == "$matching_digest" ]]; then
+  refresh_release_manifest
   printf 'APK generated at: %s\n' "$apk"
   printf 'Publication successful: identical APK already available (%s %s v%s).\n' "$title" "$channel" "$version"
   printf 'APK Index: https://athenova-tools.github.io/APK/\n'
@@ -108,6 +125,7 @@ gh release create "$tag" \
   --notes "$notes" \
   --latest=false
 
+refresh_release_manifest
 printf 'APK generated at: %s\n' "$apk"
 printf 'Published successfully: %s %s v%s (%s)\n' "$title" "$channel" "$version" "$tag"
 printf 'APK Index: https://athenova-tools.github.io/APK/\n'
