@@ -82,9 +82,10 @@ fi
 local_digest="sha256:$(sha256sum "$staged_apk" | cut -d ' ' -f 1)"
 release_pages="$upload_dir/releases-pages.json"
 manifest_repo="$(cd "$(dirname "$0")/.." && pwd)"
+source "$(dirname "$0")/gh-releases-api.sh"
 
 refresh_release_manifest() {
-  gh api --paginate --slurp "repos/Athenova-tools/APK/releases?per_page=100" > "$release_pages"
+  apk_index_fetch_releases "$release_pages"
   python3 "$manifest_repo/scripts/update_release_manifest.py" \
     "$app" "$release_pages" "$manifest_repo/${app}-releases.json"
   if ! git -C "$manifest_repo" diff --quiet -- "${app}-releases.json" ||
@@ -96,7 +97,7 @@ refresh_release_manifest() {
   fi
 }
 
-gh api --paginate --slurp "repos/Athenova-tools/APK/releases?per_page=100" > "$release_pages"
+apk_index_fetch_releases "$release_pages"
 matching_digest=$(python3 -c 'import json,sys; app,channel,asset_name,source=sys.argv[1:]; pages=json.load(open(source)); releases=[release for page in pages for release in page]; matches=[]
 for release in releases:
  tag=release.get("tag_name", "")
